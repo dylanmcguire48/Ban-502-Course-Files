@@ -1,0 +1,157 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+Dylan McGuire
+
+Ban 502
+
+Course Project Phase 1
+
+
+```{r}
+library(tidyverse)
+train <- read_csv("train.csv")
+View(train)
+```
+
+```{r failure distribution}
+failure_by_product <- train %>%
+  count(product_code, failure) %>%
+  pivot_wider(
+    names_from = failure,
+    values_from = n,
+    values_fill = 0
+  ) %>%
+  mutate(
+    total = No + Yes,
+    failure_rate = Yes / total
+  )
+failure_by_product
+ggplot(failure_by_product,
+       aes(x = product_code,
+           y = failure_rate)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) paste0(round(100*x,1), "%")) +
+  labs(title = "Failure Rate by Product Code",
+       x = "Product Code",
+       y = "Failure Rate")
+```
+
+```{r Mats 0/1}
+materials_summary1 <- train %>%
+  select(attribute_0, attribute_1, failure) %>%
+  pivot_longer(
+    cols = c(attribute_0, attribute_1),
+    names_to = "attribute_position",
+    values_to = "material"
+  )
+material_summary1 <- materials_summary1 %>%
+  group_by(material) %>%
+  summarise(
+    times_seen = n(),
+    failures = sum(failure == "Yes", na.rm = TRUE),
+    failure_rate = failures / times_seen
+  ) %>%
+  arrange(desc(failure_rate))
+
+material_summary1
+ggplot(material_summary1,
+       aes(x = reorder(material, failure_rate),
+           y = failure_rate)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) paste0(round(100*x,1), "%")) +
+  labs(
+    title = "Failure Rate by Material (Combined attribute_0 & attribute_1)",
+    x = "Material",
+    y = "Failure Rate"
+  )
+```
+```{r materials 2}
+materials_summary2 <- train %>%
+  select(attribute_2, attribute_3, failure) %>%
+  pivot_longer(
+    cols = c(attribute_2, attribute_3),
+    names_to = "attribute_position",
+    values_to = "material"
+  )
+material_summary2 <- materials_summary2 %>%
+  group_by(material) %>%
+  summarise(
+    times_seen = n(),
+    failures = sum(failure == "Yes", na.rm = TRUE),
+    failure_rate = failures / times_seen
+  ) %>%
+  arrange(desc(failure_rate))
+
+material_summary2
+ggplot(material_summary2,
+       aes(x = reorder(material, failure_rate),
+           y = failure_rate)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) paste0(round(100*x,1), "%")) +
+  labs(
+    title = "Failure Rate by Material (Combined attribute_2 & attribute_3)",
+    x = "Material",
+    y = "Failure Rate"
+  )
+```
+
+```{r loading}
+loading_summary <- train %>%
+  group_by(failure) %>%
+  summarise(
+    avg_loading = mean(loading, na.rm = TRUE),
+    median_loading = median(loading, na.rm = TRUE),
+    sd_loading = sd(loading, na.rm = TRUE),
+    count = n()
+  )
+
+loading_summary
+ggplot(loading_summary,
+       aes(x = failure, y = avg_loading)) +
+  geom_col() +
+  labs(
+    title = "Average Loading by Failure Status",
+    x = "Failure",
+    y = "Average Loading"
+  )
+
+
+```
+
+```{r measurements 1}
+measurement_0_7_stats <- train %>%
+  group_by(failure) %>%
+  summarise(
+    across(
+      measurement_0:measurement_7,
+      list(
+        mean = ~mean(.x, na.rm = TRUE)
+      ),
+      .names = "{.col}_{.fn}"
+    ),
+    count = n()
+  )
+
+measurement_0_7_stats
+```
+
+```{r measurements 2}
+measurement_8_16_stats <- train %>%
+  group_by(failure) %>%
+  summarise(
+    across(
+      measurement_8:measurement_16,
+      list(
+        mean = ~mean(.x, na.rm = TRUE)
+      ),
+      .names = "{.col}_{.fn}"
+    ),
+    count = n()
+  )
+
+measurement_8_16_stats
+```
+
